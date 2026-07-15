@@ -240,34 +240,38 @@
             localStorage.setItem('nexus_db_cards', JSON.stringify(state.cards));
         }
 
-        // Parses a leading "[ElementName]" tag off the front of a string, e.g.
-        // "[physical]Normal Arrow +4" -> { cleaned: "Normal Arrow +4", element: "Physical" }
-        // "Enemy Tier I" (no tag) -> { cleaned: "Enemy Tier I", element: null }
+        // Parses ALL leading "[ElementName]" tags off the front of a string, e.g.
+        // "[physical]Normal Arrow +4" -> { cleaned: "Normal Arrow +4", elements: ["Physical"] }
+        // "[Time][Poison]Enemy Tier I" -> { cleaned: "Enemy Tier I", elements: ["Time", "Poison"] }
+        // "Enemy Tier I" (no tag) -> { cleaned: "Enemy Tier I", elements: [] }
         // Matching against the known ELEMENTS list is case-insensitive so that
         // "[physical]" and "[Physical]" both resolve to the canonical "Physical".
+        // Multiple stacked tags are supported since a card/action can carry more
+        // than one element (e.g. a card that's both Time and Poison typed).
         function extractElementTag(raw) {
-            const source = (raw || '').toString();
-            const match = source.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
-            if (!match) return { cleaned: source.trim(), element: null };
-
-            const tag = match[1].trim();
-            const rest = match[2].trim();
-            if (!tag) return { cleaned: rest, element: null };
-
-            const canonical = ELEMENTS.find(e => e.toLowerCase() === tag.toLowerCase());
-            const element = canonical || (tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase());
-            return { cleaned: rest, element };
+            let source = (raw || '').toString();
+            const elements = [];
+            let match;
+            while ((match = source.match(/^\s*\[([^\]]+)\]\s*/))) {
+                const tag = match[1].trim();
+                if (tag) {
+                    const canonical = ELEMENTS.find(e => e.toLowerCase() === tag.toLowerCase());
+                    const element = canonical || (tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase());
+                    if (!elements.includes(element)) elements.push(element);
+                }
+                source = source.slice(match[0].length);
+            }
+            return { cleaned: source.trim(), elements };
         }
 
-        // Re-does the inverse of extractElementTag: puts a "[Element]" tag back
-        // on the front of a name/type string, using the first entry of the given
-        // elements array (the Creator format only supports a single tag, so if an
-        // action has been edited to carry more than one element only the first is
-        // embedded on export).
+        // Re-does the inverse of extractElementTag: puts ALL of the given
+        // elements back on the front of a name/type string as stacked
+        // "[Element1][Element2]" tags, mirroring how multi-element cards and
+        // actions are written in the Creator format.
         function reAttachElementTag(text, elements) {
             const base = text || '';
-            const first = Array.isArray(elements) && elements.length > 0 ? elements[0] : null;
-            return first ? `[${first}]${base}` : base;
+            if (!Array.isArray(elements) || elements.length === 0) return base;
+            return elements.map(e => `[${e}]`).join('') + base;
         }
 
         // Builds a single list of every attack/ability/effect on a card, restored
@@ -314,9 +318,9 @@
             // that action's own elements array (e.g. "[physical]Arrow" ->
             // name "Arrow" + elements ["Physical"]).
             const mapAction = (a, prefix) => {
-                const { cleaned, element } = extractElementTag(a.name || '');
+                const { cleaned, elements: tagElements } = extractElementTag(a.name || '');
                 const elements = Array.isArray(a.elements) ? [...a.elements] : [];
-                if (element && !elements.includes(element)) elements.push(element);
+                tagElements.forEach(el => { if (!elements.includes(el)) elements.push(el); });
 
                 const order = (typeof a.order === 'number' && !isNaN(a.order)) ? a.order : orderCounter;
                 orderCounter = Math.max(orderCounter, order + 1);
@@ -357,10 +361,10 @@
             // that out into the card's own elements array and use the cleaned
             // string as the actual card type so it matches an entry in CARD_TYPES.
             const rawType = data.cardType || data.creatureType || 'Player';
-            const { cleaned: cleanedType, element: typeElement } = extractElementTag(rawType);
+            const { cleaned: cleanedType, elements: typeElements } = extractElementTag(rawType);
 
             const elements = Array.isArray(data.elements) ? [...data.elements] : [];
-            if (typeElement && !elements.includes(typeElement)) elements.push(typeElement);
+            typeElements.forEach(el => { if (!elements.includes(el)) elements.push(el); });
 
             // Map the imported fields safely
             return {
@@ -400,26 +404,21 @@
                 const matchesSet = state.selectedSet === 'All' || card.setName === state.selectedSet;
                 
                 // Element filtering behaves differently depending on the current view:
-                // - In the "Cards" view, a card matches if the selected element appears
-                //   ANYWHERE on it (its own base elements, or any attack/ability/effect).
+                // - In the "Cards" view, a card matches only if the selected element is
+                //   one of its own base elements (the ones actually shown in the
+                //   "Elements" column) -- NOT if the element merely appears buried in
+                //   one of its attacks/abilities/effects. Otherwise a Poison-type card
+                //   with one Physical-tagged ability would confusingly show up under a
+                //   "Physical" filter while displaying a "Poison" badge.
                 // - In the Attacks/Abilities/Effects dictionary views, filtering by the
                 //   individual item's own element happens later in getDictionaryItems,
                 //   so here we only need to make sure the card has at least one item
                 //   in the relevant bucket carrying that element (otherwise the card
-                //   would show up with zero matching rows). This avoids the previous
-                //   bug where a card matched (and showed ALL of its abilities) just
-                //   because some unrelated attack or the card's base elements had the
-                //   selected element.
+                //   would show up with zero matching rows).
                 let matchesElement = true;
                 if (state.selectedElement !== 'All') {
                     if (state.viewMode === 'Cards') {
-                        const cardElements = [
-                            ...(card.elements || []),
-                            ...(card.attacks || []).flatMap(a => a.elements || []),
-                            ...(card.abilities || []).flatMap(a => a.elements || []),
-                            ...(card.effects || []).flatMap(e => e.elements || [])
-                        ];
-                        matchesElement = cardElements.includes(state.selectedElement);
+                        matchesElement = (card.elements || []).includes(state.selectedElement);
                     } else {
                         let bucket = [];
                         if (state.viewMode === 'Attacks') bucket = card.attacks || [];
