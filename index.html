@@ -271,7 +271,7 @@
         function reAttachElementTag(text, elements) {
             const base = text || '';
             if (!Array.isArray(elements) || elements.length === 0) return base;
-            return elements.map(e => `[${e}]`).join('') + base;
+            return elements.map(e => `[${e}]`).join('') + ' ' + base;
         }
 
         // Builds a single list of every attack/ability/effect on a card, restored
