@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Card Database</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --font-body: 'Inter', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+        }
+        body {
+            font-family: var(--font-body);
+            background-color: #030712;
+            color: #f9fafb;
+            overflow-x: hidden;
+        }
+        .font-display { font-family: var(--font-display); }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+        .hidden-force { display: none !important; }
+    </style>
+</head>
+<body class="selection:bg-cyan-500/30 text-sm relative min-h-screen">
+
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen"></div>
+        <div class="absolute bottom-[10%] right-[20%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] mix-blend-screen"></div>
+    </div>
+
+    <div class="relative z-10 max-w-[1400px] mx-auto px-4 py-6">
+        
+        <nav class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+            <div class="font-display font-bold text-xl tracking-wide flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center text-black">N</div>
+                NEXUS<span class="text-gray-500">DB</span>
+            </div>
+            <div class="flex gap-2">
+                <input type="file" accept=".json" id="import-db-input" class="hidden" multiple />
+                <button data-action="import-trigger" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition-colors text-xs font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Import
+                </button>
+                <button data-action="export-db" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition-colors text-xs font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Export DB
+                </button>
+            </div>
+        </nav>
+
+        <section class="mb-6 bg-[#111827]/80 backdrop-blur-md border border-white/10 rounded-lg p-4 flex flex-col gap-4 shadow-xl">
+            <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="flex gap-1 bg-black/50 p-1 rounded-md border border-white/5 w-full md:w-auto overflow-x-auto" id="view-mode-tabs">
+                    <!-- Tabs rendered via JS -->
+                </div>
+
+                <div class="relative w-full md:w-96 flex-shrink-0">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
+                    <input type="text" id="search-input" placeholder="Search database..." class="w-full pl-9 pr-3 py-1.5 bg-black/40 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors" />
+                </div>
+                
+                <button data-action="create-card" class="w-full md:w-auto flex items-center justify-center gap-1.5 px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md transition-colors font-medium shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Create Card
+                </button>
+            </div>
+
+            <div class="flex flex-wrap gap-3" id="filters-container">
+                <!-- Dropdowns rendered via JS -->
+            </div>
+        </section>
+
+        <div class="mb-2 text-xs text-gray-500 font-display uppercase tracking-widest flex items-center gap-1.5" id="stats-bar">
+            <!-- Stats rendered via JS -->
+        </div>
+
+        <main class="mb-12" id="main-content">
+            <!-- Cards or Dictionary list rendered via JS -->
+        </main>
+    </div>
+
+    <div id="view-modal" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 hidden-force">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-action="close-view-modal"></div>
+        <div class="relative w-full max-w-3xl bg-[#0b101e] border border-white/10 shadow-2xl rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="absolute top-3 right-3 flex gap-2 z-10" id="view-modal-actions">
+               <!-- Actions rendered via JS -->
+            </div>
+            <div class="overflow-y-auto p-6 md:p-8" id="view-modal-content">
+                <!-- Content rendered via JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 hidden-force">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md" data-action="close-edit-modal"></div>
+        <div class="relative w-full max-w-4xl bg-[#0b101e] border border-white/10 shadow-2xl rounded-xl flex flex-col max-h-[95vh] h-full" id="edit-modal-content">
+            <!-- Form rendered via JS -->
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 hidden-force">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative bg-[#111827] border border-white/10 rounded-lg shadow-2xl p-6 max-w-sm w-full text-center">
+            <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <h3 class="text-lg font-display font-bold text-white mb-2" id="confirm-title">Are you sure?</h3>
+            <p class="text-gray-400 text-sm mb-6" id="confirm-message">This action cannot be undone.</p>
+            <div class="flex gap-3 justify-center">
+                <button data-action="close-confirm-modal" class="px-4 py-2 rounded-md text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 transition-colors">Cancel</button>
+                <button id="confirm-yes-btn" class="px-4 py-2 rounded-md text-xs font-medium bg-red-600 hover:bg-red-500 text-white transition-colors shadow-lg shadow-red-600/20">Delete Card</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CARD_TYPES = [
+            "Player", "Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier II",
+            "Minion", "Event", "Enemy Tier I", "Enemy Tier II", "Boss Tier I", "Boss Tier II",
+            "Enemy Buff", "Spell", "Location", "Class"
+        ];
+
+        const RARITIES = [
+            "Common", "Uncommon", "Rare", "Masterwork", "Epic",
+            "Legendary", "Exotic", "Mythic", "Unique"
+        ];
+
+        const ELEMENTS = [
+            "Arcane", "Blood", "Bones", "Chaos", "Cold", "Crystal", "Dark", "Dragon",
+            "Earth", "Fire", "Gravity", "Holy", "Lightning", "Nature", "Physical",
+            "Poison", "Psychic", "Radiant", "Sand", "Shadow", "Spirit", "Time", "True", "Void"
+        ];
+
+        const RARITY_COLORS = {
+            Common: "text-gray-400 border-gray-400/30 bg-gray-400/10",
+            Uncommon: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
+            Rare: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10",
+            Masterwork: "text-blue-500 border-blue-500/30 bg-blue-500/10",
+            Epic: "text-purple-500 border-purple-500/30 bg-purple-500/10",
+            Legendary: "text-orange-400 border-orange-400/30 bg-orange-400/10",
+            Exotic: "text-pink-500 border-pink-500/30 bg-pink-500/10",
+            Mythic: "text-red-500 border-red-500/30 bg-red-500/10",
+            Unique: "text-lime-300 border-lime-300/30 bg-lime-300/10",
+        };
+
+        const generateMockCards = () => [
+            {
+                id: "c-001", cardName: "Aric, The Vanguard", cardType: "Player",
+                rarity: "Rare", elements: ["Physical", "Holy"],
+                hp: 45, ac: 16, save: "+4", borderColor: "Black", setName: "Origins", cardNumber: "001", creatorName: "Gaudam",
+                flavorText: "He stands where others fall.",
+                attacks: [
+                    { id: "a1", name: "Shield Bash", damage: "1d6", description: "Physical damage + Stun chance", elements: ["Physical"] },
+                    { id: "a2", name: "Longsword Slash", damage: "1d8", description: "Standard physical attack.", elements: ["Physical"] }
+                ],
+                abilities: [
+                    { id: "b1", name: "Defensive Stance", description: "+2 AC for 1 turn", elements: ["Holy"] },
+                    { id: "b2", name: "Inspiring Cry", description: "Heals nearby allies for 5 HP", elements: ["Radiant"] }
+                ],
+                effects: []
+            },
+            {
+                id: "c-002", cardName: "Ignite", cardType: "Ability Tier I",
+                rarity: "Common", elements: ["Fire"],
+                buyGold: 50, sellGold: 20, borderColor: "Black", setName: "Core Magic", cardNumber: "042", creatorName: "Gaudam",
+                flavorText: "A simple spark is all it takes to start an inferno.",
+                attacks: [], 
+                abilities: [
+                    { id: "b3", name: "Cast Ignite", description: "Deal 2d4 Fire damage to target. Applies 'Burning' status for 2 turns.", damage: "2d4", elements: ["Fire"] }
+                ],
+                effects: []
+            },
+            {
+                id: "c-003", cardName: "Void Terror", cardType: "Boss Tier II",
+                rarity: "Mythic", elements: ["Void", "Dark", "Chaos"],
+                hp: 350, ac: 22, save: "+10", borderColor: "Black", setName: "Abyssal Depths", cardNumber: "250", creatorName: "Gaudam",
+                flavorText: "It does not consume flesh, it consumes existence.",
+                attacks: [
+                    { id: "a3", name: "Reality Tear", damage: "3d10", description: "Ignores shields", elements: ["Void", "Chaos"] },
+                    { id: "a4", name: "Tentacle Sweep", damage: "2d8", description: "AoE Physical Damage", elements: ["Physical", "Dark"] }
+                ],
+                abilities: [
+                    { id: "b4", name: "Aura of Despair", description: "Reduces player saves by -2", elements: ["Psychic", "Dark"] }
+                ],
+                effects: [
+                    { id: "e1", name: "Phase Shift", description: "25% evasion against physical attacks", elements: ["Void"] }
+                ]
+            }
+        ];
+
+        let state = {
+            cards: [],
+            viewMode: 'Cards',
+            searchQuery: '',
+            selectedType: 'All',
+            selectedRarity: 'All',
+            selectedElement: 'All',
+            selectedSet: 'All',
+            selectedCard: null,
+            editingCard: null,
+            confirmAction: null
+        };
+
+        const icons = {
+            edit: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+            trash: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+            close: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+            download: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            plus: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`
+        };
+
+        function initApp() {
+            const cached = localStorage.getItem('nexus_db_cards');
+            if (cached) {
+                try { state.cards = JSON.parse(cached); } 
+                catch (e) { state.cards = generateMockCards(); }
+            } else {
+                state.cards = generateMockCards();
+            }
+
+            setupEventListeners();
+            renderAll();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('nexus_db_cards', JSON.stringify(state.cards));
+        }
+
+        // Parses a leading "[ElementName]" tag off the front of a string, e.g.
+        // "[physical]Normal Arrow +4" -> { cleaned: "Normal Arrow +4", element: "Physical" }
+        // "Enemy Tier I" (no tag) -> { cleaned: "Enemy Tier I", element: null }
+        // Matching against the known ELEMENTS list is case-insensitive so that
+        // "[physical]" and "[Physical]" both resolve to the canonical "Physical".
+        function extractElementTag(raw) {
+            const source = (raw || '').toString();
+            const match = source.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
+            if (!match) return { cleaned: source.trim(), element: null };
+
+            const tag = match[1].trim();
+            const rest = match[2].trim();
+            if (!tag) return { cleaned: rest, element: null };
+
+            const canonical = ELEMENTS.find(e => e.toLowerCase() === tag.toLowerCase());
+            const element = canonical || (tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase());
+            return { cleaned: rest, element };
+        }
+
+        // Re-does the inverse of extractElementTag: puts a "[Element]" tag back
+        // on the front of a name/type string, using the first entry of the given
+        // elements array (the Creator format only supports a single tag, so if an
+        // action has been edited to carry more than one element only the first is
+        // embedded on export).
+        function reAttachElementTag(text, elements) {
+            const base = text || '';
+            const first = Array.isArray(elements) && elements.length > 0 ? elements[0] : null;
+            return first ? `[${first}]${base}` : base;
+        }
+
+        // Builds a single list of every attack/ability/effect on a card, restored
+        // to their original combined sequence (the order they appeared in the
+        // source Creator 'attacks' array) rather than grouped by bucket. Items
+        // that carry an explicit numeric 'order' (assigned on import, or when
+        // added via the editor) are sorted by that value; anything without one
+        // falls back to bucket order (Attacks, then Abilities, then Effects) so
+        // hand-built cards still export in a sensible, stable sequence.
+        function getOrderedActionsForExport(card) {
+            const withMeta = [];
+            (card.attacks || []).forEach((item, idx) => withMeta.push({ item, type: 'Attack', bucketOrder: 0, idx }));
+            (card.abilities || []).forEach((item, idx) => withMeta.push({ item, type: 'Ability', bucketOrder: 1, idx }));
+            (card.effects || []).forEach((item, idx) => withMeta.push({ item, type: 'Effect', bucketOrder: 2, idx }));
+
+            withMeta.sort((x, y) => {
+                const ox = typeof x.item.order === 'number' ? x.item.order : Infinity;
+                const oy = typeof y.item.order === 'number' ? y.item.order : Infinity;
+                if (ox !== oy) return ox - oy;
+                if (x.bucketOrder !== y.bucketOrder) return x.bucketOrder - y.bucketOrder;
+                return x.idx - y.idx;
+            });
+
+            return withMeta;
+        }
+
+        function normalizeImportedCard(data) {
+            // Strip out heavy base64 image data to avoid local storage bloat
+            delete data.cardImage;
+            delete data.imageZoom;
+            delete data.imagePosX;
+            delete data.imagePosY;
+
+            // Tracks each action's position in the original combined sequence so
+            // that order survives the round trip into three separate buckets and
+            // back out again on export. If an entry already carries an explicit
+            // numeric 'order' (e.g. re-importing one of our own DB backups) that
+            // value is kept as-is instead of being overwritten.
+            let orderCounter = 0;
+
+            // Maps a raw imported action entry to the DB's internal shape,
+            // translating the Creator's 'desc' field to the DB's 'description',
+            // and pulling any leading '[Element]' tag out of the name into
+            // that action's own elements array (e.g. "[physical]Arrow" ->
+            // name "Arrow" + elements ["Physical"]).
+            const mapAction = (a, prefix) => {
+                const { cleaned, element } = extractElementTag(a.name || '');
+                const elements = Array.isArray(a.elements) ? [...a.elements] : [];
+                if (element && !elements.includes(element)) elements.push(element);
+
+                const order = (typeof a.order === 'number' && !isNaN(a.order)) ? a.order : orderCounter;
+                orderCounter = Math.max(orderCounter, order + 1);
+
+                return {
+                    id: a.id || `${prefix}-${Math.random().toString(36).substr(2, 9)}`,
+                    name: cleaned || a.name || '',
+                    damage: a.damage || '',
+                    description: a.description || a.desc || '',
+                    elements,
+                    order
+                };
+            };
+
+            const attacks = [];
+            const abilities = [];
+            const effects = [];
+
+            // The Creator now tags every entry in its single 'attacks' array with a
+            // 'type' of 'Attack', 'Ability', or 'Effect'. Split them into the DB's
+            // three separate buckets based on that tag (defaulting to Attack if untagged),
+            // while mapAction records each one's position in that original array
+            // via 'order' so the combined sequence can be rebuilt later.
+            (data.attacks || []).forEach(a => {
+                const type = (a.type || 'Attack').toLowerCase();
+                if (type === 'ability') abilities.push(mapAction(a, 'b'));
+                else if (type === 'effect') effects.push(mapAction(a, 'e'));
+                else attacks.push(mapAction(a, 'a'));
+            });
+
+            // Also merge any already-separated abilities/effects arrays, which is
+            // how the DB's own full-backup export (Export DB) stores cards.
+            (data.abilities || []).forEach(a => abilities.push(mapAction(a, 'b')));
+            (data.effects || []).forEach(e => effects.push(mapAction(e, 'e')));
+
+            // The Creator embeds the card's base element as a leading "[Element]"
+            // tag on the creature/card type (e.g. "[Poison]Enemy Tier I"). Pull
+            // that out into the card's own elements array and use the cleaned
+            // string as the actual card type so it matches an entry in CARD_TYPES.
+            const rawType = data.cardType || data.creatureType || 'Player';
+            const { cleaned: cleanedType, element: typeElement } = extractElementTag(rawType);
+
+            const elements = Array.isArray(data.elements) ? [...data.elements] : [];
+            if (typeElement && !elements.includes(typeElement)) elements.push(typeElement);
+
+            // Map the imported fields safely
+            return {
+                id: data.id || `c-${Math.random().toString(36).substr(2, 9)}`,
+                cardName: data.cardName || 'Unnamed Import',
+                cardType: cleanedType || 'Player',
+                rarity: data.rarity || data.cardTier || 'Common',
+                elements,
+                hp: data.hp || data.cardHp || '',
+                ac: data.ac || data.cardAc || '',
+                save: data.save || data.cardSave || '',
+                buyGold: data.buyGold || data.cardBuy || '',
+                sellGold: data.sellGold || data.cardSell || '',
+                borderColor: data.borderColor || '#000000',
+                setName: data.setName || '',
+                cardNumber: data.cardNumber || '',
+                creatorName: data.creatorName || data.illustrator || '',
+                flavorText: data.flavorText || '',
+                attacks,
+                abilities,
+                effects
+            };
+        }
+
+        function getFilteredCards() {
+            return state.cards.filter(card => {
+                const q = state.searchQuery.toLowerCase();
+                const matchesSearch = 
+                    (card.cardName || '').toLowerCase().includes(q) || 
+                    (card.flavorText || '').toLowerCase().includes(q) ||
+                    (card.attacks || []).some(a => (a.name||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q)) ||
+                    (card.abilities || []).some(a => (a.name||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q)) ||
+                    (card.effects || []).some(e => (e.name||'').toLowerCase().includes(q) || (e.description||'').toLowerCase().includes(q));
+
+                const matchesType = state.selectedType === 'All' || card.cardType === state.selectedType;
+                const matchesRarity = state.selectedRarity === 'All' || (card.rarity || 'Common') === state.selectedRarity;
+                const matchesSet = state.selectedSet === 'All' || card.setName === state.selectedSet;
+                
+                const cardElements = [
+                    ...(card.elements || []),
+                    ...(card.attacks || []).flatMap(a => a.elements || []),
+                    ...(card.abilities || []).flatMap(a => a.elements || []),
+                    ...(card.effects || []).flatMap(e => e.elements || [])
+                ];
+                const matchesElement = state.selectedElement === 'All' || cardElements.includes(state.selectedElement);
+                
+                return matchesSearch && matchesType && matchesRarity && matchesElement && matchesSet;
+            });
+        }
+
+        function getDictionaryItems(cards) {
+            if (state.viewMode === 'Cards') return [];
+            let items = [];
+            cards.forEach(card => {
+                let targetArray = [];
+                if (state.viewMode === 'Attacks') targetArray = card.attacks || [];
+                if (state.viewMode === 'Abilities') targetArray = card.abilities || [];
+                if (state.viewMode === 'Effects') targetArray = card.effects || [];
+                
+                targetArray.forEach(a => items.push({...a, sourceCard: card.cardName, cardId: card.id}));
+            });
+            return items;
+        }
+
+        function renderAll() {
+            renderTabs();
+            renderFilters();
+            renderMainList();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('view-mode-tabs');
+            const modes = ['Cards', 'Attacks', 'Abilities', 'Effects'];
+            container.innerHTML = modes.map(mode => `
+                <button data-action="set-view-mode" data-mode="${mode}" class="px-4 py-1.5 rounded text-xs font-display tracking-wide whitespace-nowrap transition-colors ${state.viewMode === mode ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+                    ${mode}
+                </button>
+            `).join('');
+        }
+
+        function renderFilters() {
+            const container = document.getElementById('filters-container');
+            const allSets = ['All', ...Array.from(new Set(state.cards.map(c => c.setName).filter(Boolean))).sort()];
+            
+            container.innerHTML = `
+                <select data-filter="selectedType" class="bg-black/40 border border-white/10 text-gray-300 py-1.5 px-3 rounded-md text-xs focus:outline-none">
+                    <option value="All">All Types</option>
+                    ${CARD_TYPES.map(t => `<option value="${t}" ${state.selectedType === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+                <select data-filter="selectedRarity" class="bg-black/40 border border-white/10 text-gray-300 py-1.5 px-3 rounded-md text-xs focus:outline-none">
+                    <option value="All">All Rarities</option>
+                    ${RARITIES.map(r => `<option value="${r}" ${state.selectedRarity === r ? 'selected' : ''}>${r}</option>`).join('')}
+                </select>
+                <select data-filter="selectedElement" class="bg-black/40 border border-white/10 text-gray-300 py-1.5 px-3 rounded-md text-xs focus:outline-none">
+                    <option value="All">All Elements</option>
+                    ${ELEMENTS.map(e => `<option value="${e}" ${state.selectedElement === e ? 'selected' : ''}>${e}</option>`).join('')}
+                </select>
+                <select data-filter="selectedSet" class="bg-black/40 border border-white/10 text-gray-300 py-1.5 px-3 rounded-md text-xs focus:outline-none">
+                    ${allSets.map(s => `<option value="${s}" ${state.selectedSet === s ? 'selected' : ''}>${s === 'All' ? 'All Sets' : s}</option>`).join('')}
+                </select>
+            `;
+        }
+
+        function renderMainList() {
+            const container = document.getElementById('main-content');
+            const statsBar = document.getElementById('stats-bar');
+            const filteredCards = getFilteredCards();
+            
+            if (state.viewMode === 'Cards') {
+                statsBar.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Showing ${filteredCards.length} cards`;
+                
+                let html = `
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex text-[10px] uppercase tracking-wider text-gray-500 font-display px-4 py-2 border-b border-white/5">
+                        <div class="w-1/3 min-w-[200px]">Name & Type</div>
+                        <div class="w-1/4 min-w-[150px]">Stats / Value</div>
+                        <div class="w-1/4 hidden md:block">Elements</div>
+                        <div class="w-1/6 hidden sm:block">Set</div>
+                    </div>`;
+                    
+                html += filteredCards.map(card => {
+                    const rarityColor = (RARITY_COLORS[card.rarity] || 'text-gray-400').split(' ')[0];
+                    const elements = card.elements || [];
+                    const elemsHtml = elements.slice(0, 3).map(el => `<span class="px-1.5 py-0.5 bg-white/5 rounded text-[9px] text-gray-300 border border-white/10">${el}</span>`).join('');
+                    const moreElemsHtml = elements.length > 3 ? `<span class="text-[9px] text-gray-500">+${elements.length - 3}</span>` : '';
+                    
+                    return `
+                    <div data-action="open-view-modal" data-card-id="${card.id}" class="flex items-center gap-4 bg-[#111827]/40 hover:bg-[#1f2937]/80 border border-white/5 hover:border-white/20 rounded cursor-pointer p-3 transition-colors group">
+                        <div class="w-1/3 min-w-[200px]">
+                            <div class="font-semibold text-gray-200 group-hover:text-cyan-300 truncate">${card.cardName || 'Unnamed'}</div>
+                            <div class="flex gap-2 items-center mt-0.5 text-[10px]">
+                                <span class="${rarityColor} font-medium uppercase tracking-widest">${card.rarity || 'Common'}</span>
+                                <span class="text-gray-500">•</span>
+                                <span class="text-gray-400">${card.cardType}</span>
+                            </div>
+                        </div>
+                        <div class="w-1/4 min-w-[150px] text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+                            ${card.hp ? `<div><span class="opacity-50">HP:</span> <span class="text-red-400">${card.hp}</span></div>` : ''}
+                            ${card.ac ? `<div><span class="opacity-50">AC:</span> <span class="text-blue-400">${card.ac}</span></div>` : ''}
+                            ${card.buyGold ? `<div><span class="opacity-50">Buy:</span> <span class="text-yellow-400">${card.buyGold}G</span></div>` : ''}
+                            ${card.sellGold ? `<div><span class="opacity-50">Sell:</span> <span class="text-orange-400">${card.sellGold}G</span></div>` : ''}
+                        </div>
+                        <div class="w-1/4 hidden md:flex flex-wrap gap-1 items-center">
+                            ${elemsHtml} ${moreElemsHtml}
+                        </div>
+                        <div class="w-1/6 hidden sm:block text-xs text-gray-500 truncate">
+                            ${card.setName || '-'} <span class="opacity-50 text-[10px]">#${card.cardNumber || ''}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+                html += `</div>`;
+                container.innerHTML = html;
+            } else {
+                const items = getDictionaryItems(filteredCards);
+                statsBar.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Showing ${items.length} ${state.viewMode.toLowerCase()}`;
+                
+                let html = `
+                <div class="flex flex-col border border-white/5 rounded-lg overflow-hidden bg-[#111827]/30">
+                    <div class="flex text-[10px] uppercase tracking-wider text-gray-500 font-display px-4 py-3 border-b border-white/10 bg-black/40">
+                        <div class="w-1/4 min-w-[150px]">Action Name</div>
+                        ${state.viewMode === 'Attacks' ? `<div class="w-24">Damage</div>` : ''}
+                        <div class="flex-1 min-w-[200px]">Description / Effect</div>
+                        <div class="w-48 hidden md:block">Elements</div>
+                        <div class="w-48 hidden lg:block text-right">Source Card</div>
+                    </div>
+                    <div class="flex flex-col divide-y divide-white/5">`;
+                
+                if(items.length === 0) {
+                    html += `<div class="p-6 text-center text-gray-500">No ${state.viewMode.toLowerCase()} found matching criteria.</div>`;
+                } else {
+                    html += items.map(item => `
+                        <div data-action="open-view-modal" data-card-id="${item.cardId}" class="flex items-start px-4 py-3 hover:bg-white/5 transition-colors text-xs cursor-pointer">
+                            <div class="w-1/4 min-w-[150px] font-semibold text-cyan-300 pr-2">${item.name || 'Unnamed'}</div>
+                            ${state.viewMode === 'Attacks' ? `<div class="w-24 text-red-400 font-mono pr-2">${item.damage || '-'}</div>` : ''}
+                            <div class="flex-1 min-w-[200px] text-gray-300 pr-4 leading-relaxed">${item.description || '-'}</div>
+                            <div class="w-48 hidden md:flex flex-wrap gap-1 content-start pr-2">
+                                ${(item.elements || []).map(el => `<span class="px-1.5 py-0.5 bg-black/40 rounded text-[9px] text-gray-400 border border-white/5">${el}</span>`).join('')}
+                            </div>
+                            <div class="w-48 hidden lg:block text-right text-gray-500 hover:text-white truncate" title="Click to view card">
+                                ${item.sourceCard}
+                            </div>
+                        </div>`).join('');
+                }
+                html += `</div></div>`;
+                container.innerHTML = html;
+            }
+        }
+
+         window.openViewModal = function(cardId) {
+            const card = state.cards.find(c => c.id === cardId);
+            if (!card) return;
+            state.selectedCard = card;
+
+            const modal = document.getElementById('view-modal');
+            const actionsContainer = document.getElementById('view-modal-actions');
+            const contentContainer = document.getElementById('view-modal-content');
+
+            actionsContainer.innerHTML = `
+                <button data-action="export-single-card" class="p-2 bg-black/50 hover:bg-black border border-white/10 rounded-lg text-gray-300 transition-colors" title="Export Card">${icons.download}</button>
+                <button data-action="edit-card-from-view" class="p-2 bg-black/50 hover:bg-black border border-white/10 rounded-lg text-gray-300 hover:text-cyan-400 transition-colors" title="Edit Card">${icons.edit}</button>
+                <button data-action="delete-card" data-card-id="${card.id}" class="p-2 bg-black/50 hover:bg-black border border-white/10 rounded-lg text-gray-300 hover:text-red-400 transition-colors" title="Delete Card">${icons.trash}</button>
+                <button data-action="close-view-modal" class="p-2 bg-black/50 hover:bg-black border border-white/10 rounded-lg text-gray-300 hover:text-white transition-colors" title="Close">${icons.close}</button>
+            `;
+
+            const rarityClass = RARITY_COLORS[card.rarity] || 'border-gray-500 text-gray-500';
+            
+            let html = `
+                <div class="flex gap-6 items-start mb-6 border-b border-white/10 pb-6 pr-32 sm:pr-36">
+                    <div class="shrink-0 w-20 h-20 rounded-xl flex items-center justify-center border-2 bg-black/50 text-3xl font-display font-bold shadow-xl ${rarityClass}">
+                        ${(card.cardName || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="font-display text-2xl font-bold text-white mb-1">${card.cardName || 'Unnamed Card'}</h2>
+                        <div class="flex flex-wrap gap-2 text-xs font-medium mb-3">
+                            <span class="text-cyan-400">${card.cardType}</span>
+                            <span class="text-gray-600">•</span>
+                            <span class="${rarityClass.split(' ')[0]}">${card.rarity || 'Common'}</span>
+                        </div>
+                        ${card.flavorText ? `<div class="text-gray-400 italic text-sm border-l-2 border-purple-500/50 pl-3">"${card.flavorText}"</div>` : ''}
+                    </div>
+                    <div class="hidden sm:block text-right text-[10px] text-gray-500 font-mono space-y-1">
+                        <div>Set: ${card.setName || '-'}</div>
+                        <div>#${card.cardNumber || '-'}</div>
+                        <div>By ${card.creatorName || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
+                    ${card.hp ? `<div class="bg-white/5 border border-white/5 p-2 rounded text-center"><div class="text-[10px] text-gray-500">HP</div><div class="font-display text-base text-red-400">${card.hp}</div></div>` : ''}
+                    ${card.ac ? `<div class="bg-white/5 border border-white/5 p-2 rounded text-center"><div class="text-[10px] text-gray-500">AC</div><div class="font-display text-base text-blue-400">${card.ac}</div></div>` : ''}
+                    ${card.save ? `<div class="bg-white/5 border border-white/5 p-2 rounded text-center"><div class="text-[10px] text-gray-500">SAVE</div><div class="font-display text-base text-emerald-400">${card.save}</div></div>` : ''}
+                    ${card.buyGold ? `<div class="bg-white/5 border border-white/5 p-2 rounded text-center"><div class="text-[10px] text-gray-500">BUY</div><div class="font-display text-base text-yellow-400">${card.buyGold}G</div></div>` : ''}
+                    ${card.sellGold ? `<div class="bg-white/5 border border-white/5 p-2 rounded text-center"><div class="text-[10px] text-gray-500">SELL</div><div class="font-display text-base text-orange-400">${card.sellGold}G</div></div>` : ''}
+                </div>
+                
+                <div class="space-y-6">
+            `;
+
+            if (card.attacks && card.attacks.length > 0) {
+                html += `<div><h4 class="font-display text-xs uppercase tracking-widest text-red-400 mb-2 border-b border-red-500/20 pb-1">Attacks</h4><div class="space-y-2">`;
+                card.attacks.forEach(atk => {
+                    html += `
+                        <div class="bg-black/30 border border-white/5 p-3 rounded-lg">
+                            <div class="flex justify-between items-start mb-1">
+                                <div class="font-bold text-gray-200">${atk.name || 'Unnamed Attack'}</div>
+                                ${atk.damage ? `<div class="text-red-400 font-mono text-xs bg-red-400/10 px-1.5 py-0.5 rounded">${atk.damage}</div>` : ''}
+                            </div>
+                            <div class="text-gray-400 text-xs mb-2 leading-relaxed">${atk.description || ''}</div>
+                            ${atk.elements && atk.elements.length > 0 ? `<div class="flex gap-1">${atk.elements.map(e => `<span class="text-[9px] bg-white/5 px-1.5 rounded text-gray-400">${e}</span>`).join('')}</div>` : ''}
+                        </div>`;
+                });
+                html += `</div></div>`;
+            }
+
+            if (card.abilities && card.abilities.length > 0) {
+                html += `<div><h4 class="font-display text-xs uppercase tracking-widest text-cyan-400 mb-2 border-b border-cyan-500/20 pb-1">Abilities</h4><div class="space-y-2">`;
+                card.abilities.forEach(abl => {
+                    html += `
+                        <div class="bg-black/30 border border-white/5 p-3 rounded-lg">
+                            <div class="font-bold text-gray-200 mb-1">${abl.name || 'Unnamed Ability'}</div>
+                            <div class="text-gray-400 text-xs mb-2 leading-relaxed">${abl.description || ''}</div>
+                            ${abl.elements && abl.elements.length > 0 ? `<div class="flex gap-1">${abl.elements.map(e => `<span class="text-[9px] bg-white/5 px-1.5 rounded text-gray-400">${e}</span>`).join('')}</div>` : ''}
+                        </div>`;
+                });
+                html += `</div></div>`;
+            }
+
+            if (card.effects && card.effects.length > 0) {
+                html += `<div><h4 class="font-display text-xs uppercase tracking-widest text-purple-400 mb-2 border-b border-purple-500/20 pb-1">Effects</h4><div class="space-y-2">`;
+                card.effects.forEach(eff => {
+                    html += `
+                        <div class="bg-black/30 border border-white/5 p-3 rounded-lg">
+                            <div class="font-bold text-gray-200 mb-1">${eff.name || 'Unnamed Effect'}</div>
+                            <div class="text-gray-400 text-xs mb-2 leading-relaxed">${eff.description || ''}</div>
+                            ${eff.elements && eff.elements.length > 0 ? `<div class="flex gap-1">${eff.elements.map(e => `<span class="text-[9px] bg-white/5 px-1.5 rounded text-gray-400">${e}</span>`).join('')}</div>` : ''}
+                        </div>`;
+                });
+                html += `</div></div>`;
+            }
+
+            html += `</div>`; // end space-y-6
+
+            if (card.elements && card.elements.length > 0) {
+                html += `
+                    <div class="mt-6 pt-4 border-t border-white/10 flex flex-wrap gap-2 items-center">
+                        <span class="text-[10px] text-gray-500 uppercase">Card Elements:</span>
+                        ${card.elements.map(el => `<span class="px-2 py-0.5 bg-white/10 border border-white/10 rounded text-[10px] text-gray-300">${el}</span>`).join('')}
+                    </div>`;
+            }
+
+            contentContainer.innerHTML = html;
+            modal.classList.remove('hidden-force');
+        }
+
+        window.closeViewModal = function() {
+            document.getElementById('view-modal').classList.add('hidden-force');
+            state.selectedCard = null;
+        }
+
+        window.openCreateModal = function() {
+            state.editingCard = {
+                id: `c-new-${Math.random().toString(36).substr(2, 9)}`,
+                cardName: '', cardType: 'Player', rarity: 'Common', elements: [],
+                borderColor: '#f9d71c', setName: '', cardNumber: '', creatorName: 'Gaudam',
+                flavorText: '', attacks: [], abilities: [], effects: [], hp: '', ac: '', save: '', buyGold: '', sellGold: ''
+            };
+            buildEditModalUI();
+            document.getElementById('edit-modal').classList.remove('hidden-force');
+        }
+
+        window.openEditModalFromView = function() {
+            if (!state.selectedCard) return;
+            state.editingCard = JSON.parse(JSON.stringify(state.selectedCard)); // deep copy
+            closeViewModal();
+            buildEditModalUI();
+            document.getElementById('edit-modal').classList.remove('hidden-force');
+        }
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-modal').classList.add('hidden-force');
+            state.editingCard = null;
+        }
+
+        function buildEditModalUI() {
+            const container = document.getElementById('edit-modal-content');
+            const isNew = state.editingCard.id.startsWith('c-new');
+            
+            // Logic for conditional field display
+            const combatTypes = ["Player", "Minion", "Enemy Tier I", "Enemy Tier II", "Boss Tier I", "Boss Tier II", "Class", "Enemy Buff"];
+            const economyTypes = ["Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier II", "Spell", "Event"];
+            
+            const showCombatClass = combatTypes.includes(state.editingCard.cardType) ? '' : 'hidden-force';
+            const showEconomyClass = economyTypes.includes(state.editingCard.cardType) ? '' : 'hidden-force';
+
+            let html = `
+                <div class="px-5 py-4 border-b border-white/10 bg-black/40 flex justify-between items-center shrink-0">
+                    <h2 class="font-display text-lg font-bold text-white flex items-center gap-2">
+                        ${isNew ? `${icons.plus} Create Card` : `${icons.edit} Edit Card`}
+                    </h2>
+                    <button data-action="close-edit-modal" class="text-gray-400 hover:text-white bg-white/5 p-1.5 rounded">${icons.close}</button>
+                </div>
+                
+                <div class="p-5 overflow-y-auto space-y-6 flex-1 text-xs" id="edit-form-wrapper">
+                    <!-- Basic Fields -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white/[0.02] p-4 rounded-lg border border-white/5">
+                        <div class="col-span-2">
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Card Name</label>
+                            <input type="text" data-field="cardName" value="${state.editingCard.cardName || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" placeholder="Name..." />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Type</label>
+                            <select data-field="cardType" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500">
+                                ${CARD_TYPES.map(t => `<option value="${t}" ${state.editingCard.cardType === t ? 'selected' : ''}>${t}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Rarity</label>
+                            <select data-field="rarity" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500">
+                                ${RARITIES.map(r => `<option value="${r}" ${state.editingCard.rarity === r ? 'selected' : ''}>${r}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Set Name</label>
+                            <input type="text" data-field="setName" value="${state.editingCard.setName || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Card #</label>
+                            <input type="text" data-field="cardNumber" value="${state.editingCard.cardNumber || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" />
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Creator</label>
+                            <input type="text" data-field="creatorName" value="${state.editingCard.creatorName || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" />
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="flex flex-col md:flex-row gap-3" id="stats-economy-container">
+                        
+                        <div id="section-combat-stats" class="flex-1 space-y-3 bg-white/[0.02] p-4 rounded-lg border border-white/5 transition-opacity duration-200 ${showCombatClass}">
+                            <h4 class="text-[10px] uppercase text-gray-500 font-bold mb-2">Combat Stats</h4>
+                            <div class="flex gap-2">
+                                <div class="w-1/3">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">HP</label>
+                                    <input type="text" data-field="hp" placeholder="e.g. 20+1d4" value="${state.editingCard.hp || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-red-400 outline-none focus:border-cyan-500" />
+                                </div>
+                                <div class="w-1/3">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">AC</label>
+                                    <input type="text" data-field="ac" placeholder="e.g. 15" value="${state.editingCard.ac || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-blue-400 outline-none focus:border-cyan-500" />
+                                </div>
+                                <div class="w-1/3">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">SAVE</label>
+                                    <input type="text" data-field="save" placeholder="e.g. +3" value="${state.editingCard.save || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-emerald-400 outline-none focus:border-cyan-500" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="section-economy" class="flex-1 space-y-3 bg-white/[0.02] p-4 rounded-lg border border-white/5 transition-opacity duration-200 ${showEconomyClass}">
+                            <h4 class="text-[10px] uppercase text-gray-500 font-bold mb-2">Economy</h4>
+                            <div class="flex gap-2">
+                                <div class="w-1/2">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">Buy Gold</label>
+                                    <input type="number" data-field="buyGold" placeholder="Buy Amount" value="${state.editingCard.buyGold || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-yellow-400 outline-none focus:border-cyan-500" />
+                                </div>
+                                <div class="w-1/2">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">Sell Gold</label>
+                                    <input type="number" data-field="sellGold" placeholder="Sell Amount" value="${state.editingCard.sellGold || ''}" class="w-full bg-black/50 border border-white/10 rounded p-2 text-orange-400 outline-none focus:border-cyan-500" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Elements and Flavor Text -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Flavor Text</label>
+                            <textarea data-field="flavorText" class="w-full bg-black/50 border border-white/10 rounded p-2 text-gray-300 h-16 outline-none resize-none focus:border-cyan-500">${state.editingCard.flavorText || ''}</textarea>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Card Base Elements (Comma separated)</label>
+                                <input type="text" data-field="elements" value="${(state.editingCard.elements || []).join(', ')}" placeholder="Fire, Void..." class="w-full bg-black/50 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Border Color (Hex)</label>
+                                <input type="color" data-field="borderColor" value="${state.editingCard.borderColor || '#f9d71c'}" class="w-full bg-black/50 border border-white/10 rounded h-10 outline-none cursor-pointer p-1" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Dictionary -->
+                    <div class="border-t border-white/10 pt-4 space-y-6">
+                        <div id="actions-attacks-container"></div>
+                        <div id="actions-abilities-container"></div>
+                        <div id="actions-effects-container"></div>
+                    </div>
+                </div>
+                
+                <div class="px-5 py-4 border-t border-white/10 bg-black/40 flex justify-end gap-2 shrink-0">
+                    <button data-action="close-edit-modal" class="px-4 py-2 rounded text-xs text-gray-300 hover:bg-white/10 transition-colors">Cancel</button>
+                    <button data-action="save-card" class="px-6 py-2 rounded text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-lg shadow-cyan-900/50">Save Card</button>
+                </div>
+            `;
+            container.innerHTML = html;
+
+            renderEditActionList('attacks', 'Attacks', 'text-red-400', 'border-red-500/30');
+            renderEditActionList('abilities', 'Abilities', 'text-cyan-400', 'border-cyan-500/30');
+            renderEditActionList('effects', 'Effects', 'text-purple-400', 'border-purple-500/30');
+        }
+
+        function renderEditActionList(key, label, colorClass, borderClass) {
+            const container = document.getElementById(`actions-${key}-container`);
+            if(!container) return;
+
+            const items = state.editingCard[key] || [];
+            
+            let html = `
+                <div class="border border-white/5 rounded-lg p-4 bg-[#080b13]">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-display text-sm font-bold uppercase tracking-widest ${colorClass}">${label}</h4>
+                        <button data-action="add-action" data-key="${key}" data-label="${label}" data-color="${colorClass}" data-border="${borderClass}" class="text-[10px] px-2 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 flex items-center gap-1">+ Add</button>
+                    </div>
+                    <div class="space-y-3">
+            `;
+
+            if (items.length === 0) {
+                html += `<div class="text-gray-600 italic text-[10px]">No ${label.toLowerCase()} added.</div>`;
+            } else {
+                items.forEach((action, idx) => {
+                    html += `
+                        <div class="flex flex-col gap-2 p-3 bg-black/40 border ${borderClass} rounded">
+                            <div class="flex flex-col sm:flex-row gap-2 items-start">
+                                <select data-action="change-action-type" data-key="${key}" data-idx="${idx}" title="Reclassify as..." class="w-full sm:w-24 shrink-0 bg-black/50 border border-white/10 rounded p-1.5 text-white outline-none focus:border-cyan-500 text-[11px]">
+                                    <option value="attacks" ${key === 'attacks' ? 'selected' : ''}>Attack</option>
+                                    <option value="abilities" ${key === 'abilities' ? 'selected' : ''}>Ability</option>
+                                    <option value="effects" ${key === 'effects' ? 'selected' : ''}>Effect</option>
+                                </select>
+                                <input type="text" data-action-key="${key}" data-action-idx="${idx}" data-action-field="name" placeholder="Name" value="${action.name || ''}" class="w-full sm:w-1/3 bg-black/50 border border-white/10 rounded p-1.5 text-white outline-none focus:border-cyan-500" />
+                                ${key === 'attacks' ? `<input type="text" data-action-key="${key}" data-action-idx="${idx}" data-action-field="damage" placeholder="Damage (1d6)" value="${action.damage || ''}" class="w-full sm:w-1/4 bg-black/50 border border-white/10 rounded p-1.5 text-red-400 outline-none font-mono focus:border-cyan-500" />` : ''}
+                                <input type="text" data-action-key="${key}" data-action-idx="${idx}" data-action-field="elements" placeholder="Elements (comma separated)" value="${(action.elements || []).join(', ')}" class="flex-1 w-full bg-black/50 border border-white/10 rounded p-1.5 text-white outline-none focus:border-cyan-500" />
+                                <button data-action="remove-action" data-key="${key}" data-idx="${idx}" data-label="${label}" data-color="${colorClass}" data-border="${borderClass}" class="p-1.5 text-gray-500 hover:text-red-400 transition-colors bg-white/5 rounded w-full sm:w-auto flex justify-center">${icons.trash}</button>
+                            </div>
+                            <input type="text" data-action-key="${key}" data-action-idx="${idx}" data-action-field="description" placeholder="Description / Effect Details" value="${action.description || ''}" class="w-full bg-black/50 border border-white/10 rounded p-1.5 text-gray-300 outline-none focus:border-cyan-500" />
+                        </div>
+                    `;
+                });
+            }
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+        }
+
+        window.saveCard = function() {
+            if (!state.editingCard) return;
+            
+            state.editingCard.cardName = (state.editingCard.cardName || '').trim() || 'Unnamed Card';
+            
+            const existingIndex = state.cards.findIndex(c => c.id === state.editingCard.id);
+            if (existingIndex >= 0) {
+                state.cards[existingIndex] = state.editingCard;
+            } else {
+                state.cards.unshift(state.editingCard);
+            }
+            
+            saveToStorage();
+            closeEditModal();
+            renderAll();
+        }
+
+        window.requestDeleteCard = function(id) {
+            state.confirmAction = () => {
+                state.cards = state.cards.filter(c => c.id !== id);
+                saveToStorage();
+                closeViewModal();
+                renderAll();
+            };
+            document.getElementById('confirm-title').innerText = "Delete Card?";
+            document.getElementById('confirm-message').innerText = "Are you sure you want to permanently delete this card?";
+            document.getElementById('confirm-modal').classList.remove('hidden-force');
+        }
+
+        window.closeConfirmModal = function() {
+            document.getElementById('confirm-modal').classList.add('hidden-force');
+            state.confirmAction = null;
+        }
+
+        document.getElementById('confirm-yes-btn').addEventListener('click', () => {
+            if (state.confirmAction) state.confirmAction();
+            closeConfirmModal();
+        });
+
+        // Finds the next free spot in the card's combined attack/ability/effect
+        // sequence, so newly added actions land at the end instead of resetting
+        // the order used when exporting back to the Creator format.
+        function getNextActionOrder(card) {
+            const all = [...(card.attacks || []), ...(card.abilities || []), ...(card.effects || [])];
+            const max = all.reduce((m, a) => typeof a.order === 'number' ? Math.max(m, a.order) : m, -1);
+            return max + 1;
+        }
+
+        window.addAction = function(key, label, colorClass, borderClass) {
+            if (!state.editingCard[key]) state.editingCard[key] = [];
+            const order = getNextActionOrder(state.editingCard);
+            state.editingCard[key].push({ id: `act-${Math.random().toString(36).substr(2, 9)}`, name: '', description: '', damage: '', elements: [], order });
+            renderEditActionList(key, label, colorClass, borderClass);
+        }
+
+        window.removeAction = function(key, idx, label, colorClass, borderClass) {
+            state.editingCard[key].splice(idx, 1);
+            renderEditActionList(key, label, colorClass, borderClass);
+        }
+
+        // Moves an item between the attacks / abilities / effects buckets, e.g. when
+        // the user decides something they filed as an Attack is really an Ability.
+        window.moveAction = function(fromKey, idx, toKey) {
+            if (fromKey === toKey) return;
+            if (!state.editingCard[fromKey]) return;
+            const item = state.editingCard[fromKey].splice(idx, 1)[0];
+            if (!item) return;
+            if (!state.editingCard[toKey]) state.editingCard[toKey] = [];
+            state.editingCard[toKey].push(item);
+
+            renderEditActionList('attacks', 'Attacks', 'text-red-400', 'border-red-500/30');
+            renderEditActionList('abilities', 'Abilities', 'text-cyan-400', 'border-cyan-500/30');
+            renderEditActionList('effects', 'Effects', 'text-purple-400', 'border-purple-500/30');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                state.searchQuery = e.target.value;
+                renderMainList();
+            });
+
+            document.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-action]');
+                if (!target) return;
+                
+                const action = target.getAttribute('data-action');
+
+                if (action === 'import-trigger') document.getElementById('import-db-input').click();
+                if (action === 'export-db') exportDatabase();
+                if (action === 'create-card') openCreateModal();
+                if (action === 'set-view-mode') setViewMode(target.getAttribute('data-mode'));
+                if (action === 'open-view-modal') openViewModal(target.getAttribute('data-card-id'));
+                if (action === 'close-view-modal') closeViewModal();
+                if (action === 'export-single-card') exportSingleCard();
+                if (action === 'edit-card-from-view') openEditModalFromView();
+                if (action === 'delete-card') requestDeleteCard(target.getAttribute('data-card-id'));
+                if (action === 'close-edit-modal') closeEditModal();
+                if (action === 'save-card') saveCard();
+                if (action === 'close-confirm-modal') closeConfirmModal();
+                
+                if (action === 'add-action') {
+                    addAction(
+                        target.getAttribute('data-key'),
+                        target.getAttribute('data-label'),
+                        target.getAttribute('data-color'),
+                        target.getAttribute('data-border')
+                    );
+                }
+                
+                if (action === 'remove-action') {
+                    removeAction(
+                        target.getAttribute('data-key'),
+                        parseInt(target.getAttribute('data-idx')),
+                        target.getAttribute('data-label'),
+                        target.getAttribute('data-color'),
+                        target.getAttribute('data-border')
+                    );
+                }
+            });
+
+            document.addEventListener('change', (e) => {
+                if (e.target.matches('[data-filter]')) {
+                    setFilter(e.target.getAttribute('data-filter'), e.target.value);
+                }
+                if (e.target.matches('[data-action="change-action-type"]')) {
+                    const fromKey = e.target.getAttribute('data-key');
+                    const idx = parseInt(e.target.getAttribute('data-idx'));
+                    const toKey = e.target.value;
+                    moveAction(fromKey, idx, toKey);
+                }
+            });
+
+            document.addEventListener('input', (e) => {
+                if (!state.editingCard) return;
+
+                if (e.target.matches('[data-field]')) {
+                    const field = e.target.getAttribute('data-field');
+                    
+                    if (field === 'elements') {
+                        state.editingCard[field] = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    } else if (e.target.type === 'number') {
+                        state.editingCard[field] = e.target.value === '' ? '' : Number(e.target.value);
+                    } else {
+                        state.editingCard[field] = e.target.value;
+                    }
+
+                    if (field === 'cardType') {
+                        const combatTypes = ["Player", "Minion", "Enemy Tier I", "Enemy Tier II", "Boss Tier I", "Boss Tier II", "Class", "Enemy Buff"];
+                        const economyTypes = ["Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier II", "Spell", "Event"];
+                        
+                        const combatSection = document.getElementById('section-combat-stats');
+                        const economySection = document.getElementById('section-economy');
+                        
+                        let showCombat = combatTypes.includes(state.editingCard.cardType);
+                        let showEconomy = economyTypes.includes(state.editingCard.cardType);
+
+                        if (combatSection) {
+                            if (showCombat) combatSection.classList.remove('hidden-force');
+                            else combatSection.classList.add('hidden-force');
+                        }
+                        if (economySection) {
+                            if (showEconomy) economySection.classList.remove('hidden-force');
+                            else economySection.classList.add('hidden-force');
+                        }
+                    }
+                }
+
+                if (e.target.matches('[data-action-key]')) {
+                    const key = e.target.getAttribute('data-action-key');
+                    const idx = parseInt(e.target.getAttribute('data-action-idx'));
+                    const field = e.target.getAttribute('data-action-field');
+                    
+                    if (field === 'elements') {
+                        state.editingCard[key][idx][field] = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    } else {
+                        state.editingCard[key][idx][field] = e.target.value;
+                    }
+                }
+            });
+
+            document.getElementById('import-db-input').addEventListener('change', (e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length === 0) return;
+
+                // Reads a single File into parsed JSON, resolving with an error
+                // instead of rejecting so one bad file in a multi-select doesn't
+                // stop the rest from importing.
+                const readFileAsJson = (file) => new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            resolve({ name: file.name, data: JSON.parse(event.target.result) });
+                        } catch (err) {
+                            console.error(`Could not parse "${file.name}" as JSON`, err);
+                            resolve({ name: file.name, data: null });
+                        }
+                    };
+                    reader.onerror = (err) => {
+                        console.error(`Could not read "${file.name}"`, err);
+                        resolve({ name: file.name, data: null });
+                    };
+                    reader.readAsText(file);
+                });
+
+                Promise.all(files.map(readFileAsJson)).then(results => {
+                    const valid = results.filter(r => r.data !== null && r.data !== undefined);
+
+                    if (valid.length === 0) {
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // Selecting a single file that is itself a whole database array
+                    // (i.e. an "Export DB" backup) restores/replaces the entire DB,
+                    // same as before. Any other combination -- several files at once,
+                    // or a lone single-card export -- imports every card found across
+                    // all selected files and adds them on top of the existing DB, so
+                    // multi-selecting a batch of single-card .json files imports them all.
+                    if (valid.length === 1 && Array.isArray(valid[0].data)) {
+                        state.cards = valid[0].data.map(normalizeImportedCard);
+                    } else {
+                        const newCards = [];
+                        valid.forEach(({ data }) => {
+                            if (Array.isArray(data)) {
+                                data.forEach(cardData => {
+                                    if (cardData && typeof cardData === 'object') newCards.push(normalizeImportedCard(cardData));
+                                });
+                            } else if (data && typeof data === 'object') {
+                                newCards.push(normalizeImportedCard(data));
+                            }
+                        });
+                        state.cards = [...newCards, ...state.cards];
+                    }
+
+                    saveToStorage();
+                    renderAll();
+                    e.target.value = ''; // Reset
+                });
+            });
+        }
+
+        window.setViewMode = function(mode) {
+            state.viewMode = mode;
+            renderTabs();
+            renderMainList();
+        }
+
+        window.setFilter = function(filterKey, value) {
+            state[filterKey] = value;
+            renderMainList();
+        }
+
+        window.exportDatabase = function() {
+            // Exports the entire raw database JSON as-is
+            const blob = new Blob([JSON.stringify(state.cards, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nexus_db_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        window.exportSingleCard = function() {
+            if (!state.selectedCard) return;
+            const card = state.selectedCard;
+
+            // Map DB properties (attacks, abilities, effects) seamlessly to the Creator's
+            // `attacks` array, tagging each entry with its type so the category survives
+            // a round trip. getOrderedActionsForExport restores the original combined
+            // order (rather than grouping all attacks, then all abilities, then all
+            // effects), and reAttachElementTag puts each entry's "[Element]" prefix
+            // back on its name, exactly as it looked in the imported .json.
+            const creatorAttacks = getOrderedActionsForExport(card).map(({ item, type }) => ({
+                type,
+                name: reAttachElementTag(item.name, item.elements),
+                damage: item.damage || '',
+                desc: item.description || ''
+            }));
+
+            // Reconstruct payload to perfectly match Custom Card Creator syntax
+            const exportData = {
+                creatureType: reAttachElementTag(card.cardType || 'Player', card.elements),
+                cardTier: card.rarity || 'Common',
+                cardName: card.cardName || '',
+                cardHp: card.hp || '',
+                cardAc: card.ac || '',
+                cardSave: card.save || '',
+                cardBuy: card.buyGold || '',
+                cardSell: card.sellGold || '',
+                borderColor: card.borderColor || '#f9d71c',
+                flavorText: card.flavorText || '',
+                illustrator: card.creatorName || '',
+                setName: card.setName || '',
+                cardNumber: card.cardNumber || '',
+                attacks: creatorAttacks,
+                // These default values ensure perfect import behaviors on the Creator side
+                overlayColor: '#000000',
+                vignetteToggle: false,
+                disableBorder: false,
+                disableGradients: false
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `card_${(card.cardName || 'unnamed').replace(/\s+/g, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Start Application
+        initApp();
+
+    </script>
+</body>
+</html>
