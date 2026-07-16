@@ -129,7 +129,7 @@
 
     <script>
         const CARD_TYPES = [
-            "Player", "Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier II",
+            "Player", "Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier I - Weapon", "Item Tier I - Armor", "Item Tier I - Accessory","Item Tier II", "Item Tier II - Weapon", "Item Tier II - Armor", "Item Tier II - Accessory",
             "Minion", "Event", "Enemy Tier I", "Enemy Tier II", "Boss Tier I", "Boss Tier II",
             "Enemy Buff", "Spell", "Location", "Class"
         ];
@@ -732,7 +732,7 @@
             
             // Logic for conditional field display
             const combatTypes = ["Player", "Minion", "Enemy Tier I", "Enemy Tier II", "Boss Tier I", "Boss Tier II", "Class", "Enemy Buff"];
-            const economyTypes = ["Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier II", "Spell", "Event"];
+            const economyTypes = ["Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier I - Weapon", "Item Tier I - Armor", "Item Tier I - Accessory","Item Tier II", "Item Tier II - Weapon", "Item Tier II - Armor", "Item Tier II - Accessory", "Spell"];
             
             const showCombatClass = combatTypes.includes(state.editingCard.cardType) ? '' : 'hidden-force';
             const showEconomyClass = economyTypes.includes(state.editingCard.cardType) ? '' : 'hidden-force';
@@ -1042,7 +1042,7 @@
 
                     if (field === 'cardType') {
                         const combatTypes = ["Player", "Minion", "Enemy Tier I", "Enemy Tier II", "Boss Tier I", "Boss Tier II", "Class", "Enemy Buff"];
-                        const economyTypes = ["Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier II", "Spell", "Event"];
+                        const economyTypes = ["Ability Tier I", "Ability Tier II", "Item Tier I", "Item Tier I - Weapon", "Item Tier I - Armor", "Item Tier I - Accessory","Item Tier II", "Item Tier II - Weapon", "Item Tier II - Armor", "Item Tier II - Accessory", "Spell"];
                         
                         const combatSection = document.getElementById('section-combat-stats');
                         const economySection = document.getElementById('section-economy');
