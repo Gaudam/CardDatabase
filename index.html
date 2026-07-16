@@ -106,7 +106,7 @@
     </div>
 
     <div id="edit-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 hidden-force">
-        <div class="absolute inset-0 bg-black/90 backdrop-blur-md" data-action="close-edit-modal"></div>
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md"></div>
         <div class="relative w-full max-w-4xl bg-[#0b101e] border border-white/10 shadow-2xl rounded-xl flex flex-col max-h-[95vh] h-full" id="edit-modal-content">
             <!-- Form rendered via JS -->
         </div>
@@ -238,6 +238,22 @@
 
         function saveToStorage() {
             localStorage.setItem('nexus_db_cards', JSON.stringify(state.cards));
+        }
+
+        // Persists the currently-open editingCard into state.cards and storage
+        // immediately, without closing the edit modal or re-rendering the form
+        // (which would blow away focus/cursor position mid-keystroke). Called
+        // after every field edit so changes are never lost, even if the user
+        // closes the modal or navigates away without hitting "Save Card".
+        function autoSaveEditingCard() {
+            if (!state.editingCard) return;
+            const existingIndex = state.cards.findIndex(c => c.id === state.editingCard.id);
+            if (existingIndex >= 0) {
+                state.cards[existingIndex] = state.editingCard;
+            } else {
+                state.cards.unshift(state.editingCard);
+            }
+            saveToStorage();
         }
 
         // Parses ALL leading "[ElementName]" tags off the front of a string, e.g.
@@ -722,8 +738,11 @@
         }
 
         window.closeEditModal = function() {
+            // Any edits made were already auto-saved as they happened, so
+            // closing here (via Cancel or the X button) never discards work.
             document.getElementById('edit-modal').classList.add('hidden-force');
             state.editingCard = null;
+            renderAll();
         }
 
         function buildEditModalUI() {
@@ -841,8 +860,8 @@
                 </div>
                 
                 <div class="px-5 py-4 border-t border-white/10 bg-black/40 flex justify-end gap-2 shrink-0">
-                    <button data-action="close-edit-modal" class="px-4 py-2 rounded text-xs text-gray-300 hover:bg-white/10 transition-colors">Cancel</button>
-                    <button data-action="save-card" class="px-6 py-2 rounded text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-lg shadow-cyan-900/50">Save Card</button>
+                    <button data-action="close-edit-modal" class="px-4 py-2 rounded text-xs text-gray-300 hover:bg-white/10 transition-colors">Close</button>
+                    <button data-action="save-card" class="px-6 py-2 rounded text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-lg shadow-cyan-900/50">Done</button>
                 </div>
             `;
             container.innerHTML = html;
@@ -908,7 +927,6 @@
             
             saveToStorage();
             closeEditModal();
-            renderAll();
         }
 
         window.requestDeleteCard = function(id) {
@@ -947,11 +965,13 @@
             const order = getNextActionOrder(state.editingCard);
             state.editingCard[key].push({ id: `act-${Math.random().toString(36).substr(2, 9)}`, name: '', description: '', damage: '', elements: [], order });
             renderEditActionList(key, label, colorClass, borderClass);
+            autoSaveEditingCard();
         }
 
         window.removeAction = function(key, idx, label, colorClass, borderClass) {
             state.editingCard[key].splice(idx, 1);
             renderEditActionList(key, label, colorClass, borderClass);
+            autoSaveEditingCard();
         }
 
         // Moves an item between the attacks / abilities / effects buckets, e.g. when
@@ -967,6 +987,7 @@
             renderEditActionList('attacks', 'Attacks', 'text-red-400', 'border-red-500/30');
             renderEditActionList('abilities', 'Abilities', 'text-cyan-400', 'border-cyan-500/30');
             renderEditActionList('effects', 'Effects', 'text-purple-400', 'border-purple-500/30');
+            autoSaveEditingCard();
         }
 
         function setupEventListeners() {
@@ -1059,6 +1080,8 @@
                             else economySection.classList.add('hidden-force');
                         }
                     }
+
+                    autoSaveEditingCard();
                 }
 
                 if (e.target.matches('[data-action-key]')) {
@@ -1071,6 +1094,8 @@
                     } else {
                         state.editingCard[key][idx][field] = e.target.value;
                     }
+
+                    autoSaveEditingCard();
                 }
             });
 
