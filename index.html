@@ -1157,6 +1157,18 @@
             URL.revokeObjectURL(url);
         }
 
+        // Inverse of stripGoldSuffix: appends the "G" unit suffix back onto a
+        // buy/sell amount for export, since the Creator format expects it
+        // there (e.g. "17" -> "17G"). Leaves it alone if it already ends in G
+        // (covers cards edited/typed with the suffix already included) and
+        // leaves empty values as empty.
+        function withGoldSuffix(value) {
+            if (value === '' || value === null || value === undefined) return '';
+            const str = String(value).trim();
+            if (str === '') return '';
+            return /[Gg]$/.test(str) ? str : str + 'G';
+        }
+
         window.exportSingleCard = function() {
             if (!state.selectedCard) return;
             const card = state.selectedCard;
@@ -1182,8 +1194,8 @@
                 cardHp: card.hp || '',
                 cardAc: card.ac || '',
                 cardSave: card.save || '',
-                cardBuy: card.buyGold || '',
-                cardSell: card.sellGold || '',
+                cardBuy: withGoldSuffix(card.buyGold),
+                cardSell: withGoldSuffix(card.sellGold),
                 borderColor: card.borderColor || '#f9d71c',
                 flavorText: card.flavorText || '',
                 illustrator: card.creatorName || '',
