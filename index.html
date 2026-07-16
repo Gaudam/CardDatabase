@@ -298,6 +298,18 @@
             return withMeta;
         }
 
+        // The Creator format sometimes stores buy/sell amounts with a trailing
+        // "G" unit suffix already baked in (e.g. "17G"). The DB's own display
+        // always appends "G" itself, so importing that value as-is produces a
+        // doubled "17GG". This strips a single trailing G/g (with any
+        // surrounding whitespace) so only the bare number is stored.
+        function stripGoldSuffix(value) {
+            if (typeof value !== 'string') return value;
+            const trimmed = value.trim();
+            const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*[Gg]?$/);
+            return match ? match[1] : trimmed;
+        }
+
         function normalizeImportedCard(data) {
             // Strip out heavy base64 image data to avoid local storage bloat
             delete data.cardImage;
@@ -376,8 +388,8 @@
                 hp: data.hp || data.cardHp || '',
                 ac: data.ac || data.cardAc || '',
                 save: data.save || data.cardSave || '',
-                buyGold: data.buyGold || data.cardBuy || '',
-                sellGold: data.sellGold || data.cardSell || '',
+                buyGold: stripGoldSuffix(data.buyGold || data.cardBuy || ''),
+                sellGold: stripGoldSuffix(data.sellGold || data.cardSell || ''),
                 borderColor: data.borderColor || '#000000',
                 setName: data.setName || '',
                 cardNumber: data.cardNumber || '',
